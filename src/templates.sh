@@ -57,6 +57,7 @@ unset ANTHROPIC_API_KEY
 
 [[ -f "$_env_dir/tz" ]]   && export TZ=$(tr -d '[:space:]' < "$_env_dir/tz")
 [[ -f "$_env_dir/lang" ]] && export LANG=$(tr -d '[:space:]' < "$_env_dir/lang")
+[[ -f "$_env_dir/hostname" ]] && export HOSTNAME=$(tr -d '[:space:]' < "$_env_dir/hostname")
 
 # 执行真实 claude
 _real=$(tr -d '[:space:]' < "$CAC_DIR/real_claude")
@@ -102,4 +103,70 @@ cat <<EOF
 EOF
 IOREG_EOF
     chmod +x "$CAC_DIR/shim-bin/ioreg"
+}
+
+_write_machine_id_shim() {
+    mkdir -p "$CAC_DIR/shim-bin"
+    cat > "$CAC_DIR/shim-bin/cat" << 'CAT_EOF'
+#!/usr/bin/env bash
+CAC_DIR="$HOME/.cac"
+
+# 拦截 /etc/machine-id 和 /var/lib/dbus/machine-id
+if [[ "$1" == "/etc/machine-id" ]] || [[ "$1" == "/var/lib/dbus/machine-id" ]]; then
+    _mid_file="$CAC_DIR/envs/$(tr -d '[:space:]' < "$CAC_DIR/current" 2>/dev/null)/machine_id"
+    if [[ -f "$_mid_file" ]]; then
+        cat "$_mid_file"
+        exit 0
+    fi
+fi
+
+# 非目标调用：透传真实 cat
+_real=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$CAC_DIR/shim-bin" | tr '\n' ':') command -v cat 2>/dev/null || true)
+[[ -n "$_real" ]] && exec "$_real" "$@"
+exit 1
+CAT_EOF
+    chmod +x "$CAC_DIR/shim-bin/cat"
+}
+
+_write_hostname_shim() {
+    mkdir -p "$CAC_DIR/shim-bin"
+    cat > "$CAC_DIR/shim-bin/hostname" << 'HOSTNAME_EOF'
+#!/usr/bin/env bash
+CAC_DIR="$HOME/.cac"
+
+# 读取伪造的 hostname
+_hn_file="$CAC_DIR/envs/$(tr -d '[:space:]' < "$CAC_DIR/current" 2>/dev/null)/hostname"
+if [[ -f "$_hn_file" ]]; then
+    cat "$_hn_file"
+    exit 0
+fi
+
+# 透传真实 hostname
+_real=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$CAC_DIR/shim-bin" | tr '\n' ':') command -v hostname 2>/dev/null || true)
+[[ -n "$_real" ]] && exec "$_real" "$@"
+exit 1
+HOSTNAME_EOF
+    chmod +x "$CAC_DIR/shim-bin/hostname"
+}
+
+_write_ifconfig_shim() {
+    mkdir -p "$CAC_DIR/shim-bin"
+    cat > "$CAC_DIR/shim-bin/ifconfig" << 'IFCONFIG_EOF'
+#!/usr/bin/env bash
+CAC_DIR="$HOME/.cac"
+
+# 读取伪造的 MAC 地址
+_mac_file="$CAC_DIR/envs/$(tr -d '[:space:]' < "$CAC_DIR/current" 2>/dev/null)/mac_address"
+if [[ -f "$_mac_file" ]]; then
+    FAKE_MAC=$(cat "$_mac_file")
+    _real=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$CAC_DIR/shim-bin" | tr '\n' ':') command -v ifconfig 2>/dev/null || true)
+    [[ -n "$_real" ]] && "$_real" "$@" | sed "s/ether [0-9a-f:]\{17\}/ether $FAKE_MAC/g" && exit 0
+fi
+
+# 透传真实 ifconfig
+_real=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$CAC_DIR/shim-bin" | tr '\n' ':') command -v ifconfig 2>/dev/null || true)
+[[ -n "$_real" ]] && exec "$_real" "$@"
+exit 1
+IFCONFIG_EOF
+    chmod +x "$CAC_DIR/shim-bin/ifconfig"
 }

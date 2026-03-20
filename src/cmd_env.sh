@@ -55,12 +55,15 @@ cmd_add() {
     [[ "$confirm" == "yes" ]] || { echo "已取消。"; exit 0; }
 
     mkdir -p "$env_dir"
-    echo "$proxy"           > "$env_dir/proxy"
-    echo "$(_new_uuid)"     > "$env_dir/uuid"
-    echo "$(_new_sid)"      > "$env_dir/stable_id"
-    echo "$(_new_user_id)"  > "$env_dir/user_id"
-    echo "$tz"              > "$env_dir/tz"
-    echo "$lang"            > "$env_dir/lang"
+    echo "$proxy"            > "$env_dir/proxy"
+    echo "$(_new_uuid)"      > "$env_dir/uuid"
+    echo "$(_new_sid)"       > "$env_dir/stable_id"
+    echo "$(_new_user_id)"   > "$env_dir/user_id"
+    echo "$(_new_machine_id)" > "$env_dir/machine_id"
+    echo "$(_new_hostname)"  > "$env_dir/hostname"
+    echo "$(_new_mac)"       > "$env_dir/mac_address"
+    echo "$tz"               > "$env_dir/tz"
+    echo "$lang"             > "$env_dir/lang"
 
     echo
     echo "$(_green "✓") 环境 '$(_bold "$name")' 已创建"

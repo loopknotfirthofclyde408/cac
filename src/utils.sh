@@ -6,13 +6,38 @@ _green()  { printf '\033[32m%s\033[0m' "$*"; }
 _red()    { printf '\033[31m%s\033[0m' "$*"; }
 _yellow() { printf '\033[33m%s\033[0m' "$*"; }
 
+_detect_os() {
+    case "$(uname -s)" in
+        Darwin) echo "macos" ;;
+        Linux)  echo "linux" ;;
+        MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
+        *) echo "unknown" ;;
+    esac
+}
+
+_get_real_cmd() {
+    local cmd="$1"
+    PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$CAC_DIR/shim-bin" | tr '\n' ':') \
+        command -v "$cmd" 2>/dev/null || true
+}
+
 _new_uuid()    { uuidgen | tr '[:lower:]' '[:upper:]'; }
 _new_sid()     { uuidgen | tr '[:upper:]' '[:lower:]'; }
 _new_user_id() { python3 -c "import os; print(os.urandom(32).hex())"; }
+_new_machine_id() { uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]'; }
+_new_hostname() { echo "host-$(uuidgen | cut -d- -f1 | tr '[:upper:]' '[:lower:]')"; }
+_new_mac() { printf '02:%02x:%02x:%02x:%02x:%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)); }
 
 # host:port:user:pass → http://user:pass@host:port
+# 或直接传入完整 URL（http://、https://、socks5://）
 _parse_proxy() {
     local raw="$1"
+    # 如果已经是完整 URL，直接返回
+    if [[ "$raw" =~ ^(http|https|socks5):// ]]; then
+        echo "$raw"
+        return
+    fi
+    # 否则解析 host:port:user:pass 格式
     local host port user pass
     host=$(echo "$raw" | cut -d: -f1)
     port=$(echo "$raw" | cut -d: -f2)

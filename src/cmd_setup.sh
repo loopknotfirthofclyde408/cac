@@ -14,11 +14,23 @@ cmd_setup() {
 
     mkdir -p "$ENVS_DIR"
     echo "$real_claude" > "$CAC_DIR/real_claude"
-    _write_wrapper
-    _write_ioreg_shim
 
-    echo "  ✓ wrapper    → $CAC_DIR/bin/claude"
-    echo "  ✓ ioreg shim → $CAC_DIR/shim-bin/ioreg"
+    local os; os=$(_detect_os)
+    _write_wrapper
+    _write_hostname_shim
+    _write_ifconfig_shim
+
+    if [[ "$os" == "macos" ]]; then
+        _write_ioreg_shim
+        echo "  ✓ ioreg shim → $CAC_DIR/shim-bin/ioreg"
+    elif [[ "$os" == "linux" ]]; then
+        _write_machine_id_shim
+        echo "  ✓ machine-id shim → $CAC_DIR/shim-bin/cat"
+    fi
+
+    echo "  ✓ wrapper → $CAC_DIR/bin/claude"
+    echo "  ✓ hostname shim → $CAC_DIR/shim-bin/hostname"
+    echo "  ✓ ifconfig shim → $CAC_DIR/shim-bin/ifconfig"
     echo
     echo "── 下一步 ──────────────────────────────────────────────"
     echo "1. 将以下两行加到 ~/.zshrc 最前面："
