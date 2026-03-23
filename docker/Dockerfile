@@ -13,6 +13,7 @@ ARG BUILD_PROXY
 # host's network; only external downloads (GitHub, astral.sh) need the proxy.
 RUN set -eux; \
     CURL="curl ${BUILD_PROXY:+-x $BUILD_PROXY}"; \
+    export ALL_PROXY="${BUILD_PROXY:-}" all_proxy="${BUILD_PROXY:-}"; \
     apt-get update && apt-get install -y --no-install-recommends \
       build-essential ca-certificates curl git iproute2 \
       locales nftables procps python3 python3-venv \
@@ -31,7 +32,9 @@ RUN set -eux; \
     && chmod +x /usr/local/bin/sing-box
 
 # Claude Code CLI
+# install.sh internally uses curl — needs ALL_PROXY so inner downloads also go through proxy
 RUN set -eux; \
+    export ALL_PROXY="${BUILD_PROXY:-}" all_proxy="${BUILD_PROXY:-}"; \
     curl ${BUILD_PROXY:+-x "$BUILD_PROXY"} -fsSL https://claude.ai/install.sh | bash; \
     test -x /root/.local/bin/claude
 
