@@ -65,7 +65,8 @@
             "pages": [
               "index",
               "quickstart",
-              "concepts"
+              "concepts",
+              "changelog"
             ]
           },
           {
@@ -110,7 +111,8 @@
             "pages": [
               "zh/index",
               "zh/quickstart",
-              "zh/concepts"
+              "zh/concepts",
+              "zh/changelog"
             ]
           },
           {

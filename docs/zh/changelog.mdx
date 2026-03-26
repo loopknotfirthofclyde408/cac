@@ -1,0 +1,110 @@
+---
+title: 更新日志
+description: 版本发布历史和重要变更
+---
+
+所有重要变更记录在此，每个条目关联对应的 PR 或 Issue。
+
+## v1.3.2
+<sub>2026-03-27</sub>
+
+**国际化**
+
+- 所有终端输出翻译为英文，面向国际用户 — 源码文件全英文，CLI 不再输出中文
+
+## v1.3.1
+<sub>2026-03-27</sub>
+
+**紧急修复**
+
+- 修复 shell function 硬编码 `$HOME/bin/cac` 的问题 — 改为动态 `command -v` 查找，兼容 npm/nvm 全局安装
+
+## v1.3.0
+<sub>2026-03-26</sub>
+
+**安全增强** — [PR #28](https://github.com/nmhjklnm/cac/pull/28) / [Issue #27](https://github.com/nmhjklnm/cac/issues/27)
+
+基于 Claude Code 2.1.83 逆向分析，修复多个指纹采集点：
+
+- **anonymousId**：`.claude.json` 中的第二持久标识符（格式：`claudecode.v1.<uuid>`）— 环境切换时自动重置
+- **statsig.stable_id**：修复无文件时的静默失败；自动创建 `statsig.stable_id.local` 兜底
+- **GrowthBook**：发现新增的 A/B 测试框架 — `cdn.growthbook.io` 加入 DNS 拦截
+- **接口级 MAC 伪装**：不同网络接口生成不同派生 MAC（XOR 接口索引），避免「所有接口 MAC 相同」的异常特征
+- **缓存字段清理**：环境切换时清除 `numStartups`、`firstStartTime`、`cachedGrowthBookFeatures`、`cachedStatsigGates`
+
+**`cac env check` 流式输出** — [PR #28](https://github.com/nmhjklnm/cac/pull/28)
+
+- 每项检测完成立即显示结果，不再等 20 秒全部跑完
+- IP 检测时动画圆点
+- 多源出口 IP 检测快速重试：api.ip.sb → ip.3322.net → ipify → ipinfo
+- TUN 冲突检测 + relay 绕过状态显示
+
+**CI/CD**
+
+- 预发布版本（如 `1.3.1-beta.1`）自动发布到 npm `beta` 标签
+
+## v1.2.0
+<sub>2026-03-25</sub>
+
+**环境管理大升级** — [PR #25](https://github.com/nmhjklnm/cac/pull/25)
+
+- **`cac env set`**：修改已有环境的代理、版本、时区、语言
+- **创建即激活**：`cac env create` 自动激活新环境，去掉了 `activate/deactivate` 概念
+- **表格化输出**：`cac env ls` 和 `cac claude ls` 使用对齐的表格展示
+- **Shell function wrapper**：解决与 nvm、pyenv 等版本管理器的 PATH 冲突
+- **自动解析最新版本**：`cac env create` 不指定 `-c` 时自动使用最新已安装版本
+
+**文档更新** — [PR #26](https://github.com/nmhjklnm/cac/pull/26)
+
+- README 重写，适配 v1.2+ 命令结构
+- Mintlify 文档站上线：[cac.nextmind.space/docs](https://cac.nextmind.space/docs)
+
+**Relay 稳定性** — [PR #14](https://github.com/nmhjklnm/cac/pull/14) / [PR #15](https://github.com/nmhjklnm/cac/pull/15) / [PR #16](https://github.com/nmhjklnm/cac/pull/16) / [PR #17](https://github.com/nmhjklnm/cac/pull/17) / [PR #18](https://github.com/nmhjklnm/cac/pull/18)
+
+- Buffer 累积防止二进制数据截断 — [Issue #9](https://github.com/nmhjklnm/cac/issues/9)
+- 认证代理 `Proxy-Authorization` 头支持 — [Issue #11](https://github.com/nmhjklnm/cac/issues/11)
+- 修复 `upstreamExtra` 转发方向错误 — [Issue #10](https://github.com/nmhjklnm/cac/issues/10)
+- 代理密码中的冒号支持 — [Issue #12](https://github.com/nmhjklnm/cac/issues/12)
+- 完善 `ChildProcess` mock（stdio、exitCode、signalCode）— [Issue #13](https://github.com/nmhjklnm/cac/issues/13)
+
+**其他** — [PR #22](https://github.com/nmhjklnm/cac/pull/22) / [PR #23](https://github.com/nmhjklnm/cac/pull/23)
+
+- 原生 Claude 设置不再泄露到 cac 环境
+- `cac delete` 时清理 relay 和端口转发进程 — [Issue #21](https://github.com/nmhjklnm/cac/issues/21)
+- CI：ShellCheck + 构建一致性检查
+
+## v1.1.x
+<sub>2026-03-24</sub>
+
+**npm 生态**
+
+- 发布到 npm：`npm install -g claude-cac`
+- nvm/npm 全局安装兼容：符号链接解析、`command -v` 查找
+- `CAC_VERSION` 与 `package.json` 在 CI 中自动同步
+
+**Check 输出重构**
+
+- 先结论后详情，`-d` 查看完整信息
+- 代理不通时跳过 TUN 冲突检查
+- relay 验证连通性后才报告 TUN 绕过成功
+
+**健壮性**
+
+- JS hook 每次命令执行时同步，而非仅首次初始化
+- relay 自动绕过替代令人紧张的 TUN 冲突警告
+
+## v1.0.0
+<sub>2026-03-23</sub>
+
+**初始架构** — [PR #20](https://github.com/nmhjklnm/cac/pull/20)
+
+从代理管理脚本重构为 uv 风格的 Claude Code 管理器：
+
+- **版本管理**：`cac claude install/ls/pin/uninstall`
+- **环境隔离**：`cac env create/ls/rm`，每环境独立 `CLAUDE_CONFIG_DIR`
+- **Node.js 指纹钩子**：运行时拦截 `os.hostname()`、`os.networkInterfaces()`、`child_process.execSync('wmic/ioreg')` — [PR #5](https://github.com/nmhjklnm/cac/pull/5)
+- **DNS guard**：通过 `dns.lookup` + `net.connect` + `fetch` monkey-patching 拦截遥测域名 — [PR #3](https://github.com/nmhjklnm/cac/pull/3)
+- **健康检查 bypass**：进程内 Node.js 拦截，无需 `/etc/hosts` 或 root 权限
+- **本地 relay**：通过 loopback 转发自动绕过 TUN 接口
+- **mTLS**：自签 CA + 每环境独立客户端证书
+- **Docker 模式**：sing-box TUN 网络隔离 + cac 身份伪装 — [PR #8](https://github.com/nmhjklnm/cac/pull/8)

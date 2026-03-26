@@ -1,0 +1,110 @@
+---
+title: Changelog
+description: Release history and notable changes
+---
+
+All notable changes to this project are documented here. Each entry links to the corresponding PR or issue.
+
+## v1.3.2
+<sub>2026-03-27</sub>
+
+**i18n**
+
+- All terminal output translated to English for international users — source files fully English, no more Chinese in CLI output
+
+## v1.3.1
+<sub>2026-03-27</sub>
+
+**Hotfix**
+
+- Fixed shell function hardcoding `$HOME/bin/cac` — now dynamically finds `cac` via `command -v`, compatible with npm/nvm global installs
+
+## v1.3.0
+<sub>2026-03-26</sub>
+
+**Security enhancements** — [PR #28](https://github.com/nmhjklnm/cac/pull/28) / [Issue #27](https://github.com/nmhjklnm/cac/issues/27)
+
+Based on reverse engineering of Claude Code 2.1.83, fixed multiple fingerprint collection points:
+
+- **anonymousId**: A second persistent identifier in `.claude.json` (format: `claudecode.v1.<uuid>`) — now auto-reset on environment switch
+- **statsig.stable_id**: Fixed silent failure when no existing file; creates fallback `statsig.stable_id.local`
+- **GrowthBook**: New A/B testing framework discovered — `cdn.growthbook.io` added to DNS block list
+- **Per-interface MAC spoofing**: Different network interfaces now get different derived MACs (XOR with interface index), avoiding the "all interfaces share identical MAC" anomaly
+- **Stale field cleanup**: `numStartups`, `firstStartTime`, `cachedGrowthBookFeatures`, `cachedStatsigGates` cleared on environment switch
+
+**Streaming `cac env check`** — [PR #28](https://github.com/nmhjklnm/cac/pull/28)
+
+- Each check result displays immediately — no more 20-second blank wait
+- Animated dots during IP detection
+- Multi-source exit IP detection with fast retry: api.ip.sb, ip.3322.net, ipify, ipinfo
+- TUN conflict detection with relay bypass status
+
+**CI/CD**
+
+- Prerelease versions (e.g. `1.3.1-beta.1`) auto-publish to npm `beta` tag
+
+## v1.2.0
+<sub>2026-03-25</sub>
+
+**Environment management overhaul** — [PR #25](https://github.com/nmhjklnm/cac/pull/25)
+
+- **`cac env set`**: Modify existing environments — proxy, version, timezone, language
+- **Auto-activate on create**: `cac env create` automatically activates; removed `activate/deactivate`
+- **Table output**: `cac env ls` and `cac claude ls` use aligned table format
+- **Shell function wrapper**: Solves PATH conflicts with nvm, pyenv, and other version managers
+- **Auto-resolve latest version**: `cac env create` without `-c` automatically uses the latest installed version
+
+**Docs update** — [PR #26](https://github.com/nmhjklnm/cac/pull/26)
+
+- README rewrite for v1.2+ command structure
+- Mintlify docs site launched at [cac.nextmind.space/docs](https://cac.nextmind.space/docs)
+
+**Relay stability** — [PR #14](https://github.com/nmhjklnm/cac/pull/14) / [PR #15](https://github.com/nmhjklnm/cac/pull/15) / [PR #16](https://github.com/nmhjklnm/cac/pull/16) / [PR #17](https://github.com/nmhjklnm/cac/pull/17) / [PR #18](https://github.com/nmhjklnm/cac/pull/18)
+
+- Buffer accumulation prevents binary data corruption — [Issue #9](https://github.com/nmhjklnm/cac/issues/9)
+- `Proxy-Authorization` header for authenticated upstream — [Issue #11](https://github.com/nmhjklnm/cac/issues/11)
+- Fix `upstreamExtra` forwarded to wrong direction — [Issue #10](https://github.com/nmhjklnm/cac/issues/10)
+- Colon support in proxy passwords — [Issue #12](https://github.com/nmhjklnm/cac/issues/12)
+- Complete `ChildProcess` mock (stdio, exitCode, signalCode) — [Issue #13](https://github.com/nmhjklnm/cac/issues/13)
+
+**Other** — [PR #22](https://github.com/nmhjklnm/cac/pull/22) / [PR #23](https://github.com/nmhjklnm/cac/pull/23)
+
+- Native Claude settings no longer leak into cac environments
+- Kill relay and port-forward processes on `cac delete` — [Issue #21](https://github.com/nmhjklnm/cac/issues/21)
+- CI: ShellCheck + build consistency checks
+
+## v1.1.x
+<sub>2026-03-24</sub>
+
+**npm ecosystem**
+
+- Published to npm: `npm install -g claude-cac`
+- nvm/npm global install compatibility: symlink resolution, `command -v` lookup
+- `CAC_VERSION` auto-synced with `package.json` in CI
+
+**Check output redesign**
+
+- Conclusion-first output, `-d` flag for full details
+- Skip TUN conflict check when proxy is unreachable
+- Verify relay connectivity before reporting TUN bypass success
+
+**Robustness**
+
+- JS hooks synced on every command, not just first init
+- Relay auto-bypass shown instead of alarming TUN conflict warning
+
+## v1.0.0
+<sub>2026-03-23</sub>
+
+**Initial architecture** — [PR #20](https://github.com/nmhjklnm/cac/pull/20)
+
+Rewrite from proxy management script to uv-style Claude Code manager:
+
+- **Version management**: `cac claude install/ls/pin/uninstall`
+- **Environment isolation**: `cac env create/ls/rm` with per-environment `CLAUDE_CONFIG_DIR`
+- **Node.js fingerprint hook**: Intercepts `os.hostname()`, `os.networkInterfaces()`, `child_process.execSync('wmic/ioreg')` — [PR #5](https://github.com/nmhjklnm/cac/pull/5)
+- **DNS guard**: Blocks telemetry domains via `dns.lookup` + `net.connect` + `fetch` monkey-patching — [PR #3](https://github.com/nmhjklnm/cac/pull/3)
+- **Health check bypass**: In-process Node.js interception, no `/etc/hosts` or root needed
+- **Local relay**: Auto-bypasses TUN interfaces via loopback forwarding
+- **mTLS**: Self-signed CA + per-environment client certificates
+- **Docker mode**: sing-box TUN network isolation + cac identity protection — [PR #8](https://github.com/nmhjklnm/cac/pull/8)
