@@ -5,6 +5,15 @@ description: 版本发布历史和重要变更
 
 所有重要变更记录在此，每个条目关联对应的 PR 或 Issue。
 
+## v1.4.3
+<sub>2026-03-27</sub>
+
+**关键修复：Claude 静默无法启动** — [commit](https://github.com/nmhjklnm/cac/commit/3258ca9)
+
+- 在 `set -euo pipefail` 下，没有 `claude` 进程时 `pgrep` 返回 exit code 1。`pipefail` 使整条管道失败，`set -e` 在执行 `"$_real" "$@"` 之前退出 wrapper——Claude 没有任何输出，像点了没反应。
+- `postinstall.js` 现在在升级时直接 patch 已有的 `~/.cac/bin/claude`，无需用户手动运行任何 `cac` 命令即可立即生效。
+- `cac env ls` 现在会触发 `_ensure_initialized`，支持按版本号自动重新生成 wrapper。
+
 ## v1.4.0
 <sub>2026-03-27</sub>
 

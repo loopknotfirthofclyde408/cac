@@ -5,6 +5,15 @@ description: Release history and notable changes
 
 All notable changes to this project are documented here. Each entry links to the corresponding PR or issue.
 
+## v1.4.3
+<sub>2026-03-27</sub>
+
+**Critical fix: Claude silently fails to launch** — [commit](https://github.com/nmhjklnm/cac/commit/3258ca9)
+
+- Under `set -euo pipefail`, `pgrep` returns exit code 1 when no `claude` process is running. With `pipefail`, the entire pipeline fails, and `set -e` exits the wrapper before `"$_real" "$@"` executes — Claude appears to do nothing with no output.
+- `postinstall.js` now directly patches existing `~/.cac/bin/claude` on upgrade, so the fix takes effect immediately without requiring the user to run any `cac` command first.
+- `cac env ls` now triggers `_ensure_initialized`, enabling automatic wrapper regeneration on version upgrade.
+
 ## v1.4.0
 <sub>2026-03-27</sub>
 
