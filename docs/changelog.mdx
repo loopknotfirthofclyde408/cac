@@ -5,6 +5,23 @@ description: Release history and notable changes
 
 All notable changes to this project are documented here. Each entry links to the corresponding PR or issue.
 
+## v1.4.4
+<sub>2026-03-29</sub>
+
+**Critical fix: Relay killed on every session exit** — [PR #45](https://github.com/nmhjklnm/cac/pull/45)
+
+- Any `claude -p` one-shot invocation (e.g. from a Feishu/Slack auto-reply pipeline) killed the shared relay process via `_cleanup_all`, breaking all other active sessions with **Connection Refused**. Relay lifecycle changed from session-level to environment-level — persists across sessions, only stopped by `cac env activate` (switch) or `cac self delete`.
+- Added `relay.proxy` file to detect proxy mismatch on startup — if relay is running with a different proxy, it's automatically restarted.
+- `postinstall.js` now patches old wrappers to remove the `trap _cleanup_all EXIT INT TERM` line on upgrade.
+
+**Fix: `cac env check` incomplete** — [PR #45](https://github.com/nmhjklnm/cac/pull/45)
+
+- Same `pgrep` pipefail bug as the wrapper — `cac env check` crashed at the concurrent session check, skipping proxy connectivity, exit IP detection, and TUN conflict checks.
+
+**Fix: 10 silent failure points eliminated** — [PR #45](https://github.com/nmhjklnm/cac/pull/45)
+
+- Systematic audit of all `set -euo pipefail` failures: unguarded `grep` in subshells, `kill` race conditions, empty arrays on bash 3.2, missing `python3` fallbacks, broken symlinks, invalid network interfaces, `openssl` pipeline failures. Each now has explicit error handling instead of silently exiting.
+
 ## v1.4.3
 <sub>2026-03-27</sub>
 

@@ -5,6 +5,23 @@ description: 版本发布历史和重要变更
 
 所有重要变更记录在此，每个条目关联对应的 PR 或 Issue。
 
+## v1.4.4
+<sub>2026-03-29</sub>
+
+**关键修复：Relay 在 session 退出时被杀** — [PR #45](https://github.com/nmhjklnm/cac/pull/45)
+
+- 任何 `claude -p` 短命调用（如飞书/Slack 自动回复管道）都会通过 `_cleanup_all` 杀掉共享的 relay 进程，导致所有其他活跃 session **Connection Refused**。Relay 生命周期从 session 级改为环境级——跨 session 持久化，仅在 `cac env activate`（切换环境）或 `cac self delete` 时停止。
+- 新增 `relay.proxy` 文件检测代理不匹配——如果 relay 指向的代理与当前环境不同，自动重启。
+- `postinstall.js` 升级时自动移除旧 wrapper 中的 `trap _cleanup_all EXIT INT TERM`。
+
+**修复：`cac env check` 不完整** — [PR #45](https://github.com/nmhjklnm/cac/pull/45)
+
+- 与 wrapper 相同的 `pgrep` pipefail bug——`cac env check` 在并发 session 检查处崩溃，跳过了代理连通性、出口 IP 检测和 TUN 冲突检查。
+
+**修复：消除 10 处静默失败** — [PR #45](https://github.com/nmhjklnm/cac/pull/45)
+
+- 系统性审计所有 `set -euo pipefail` 下的静默失败：子 shell 中的 `grep`、`kill` 竞态条件、bash 3.2 空数组、缺少 `python3` 回退、断链接、无效网卡、`openssl` 管道。每处都加了显式错误处理。
+
 ## v1.4.3
 <sub>2026-03-27</sub>
 
