@@ -315,31 +315,29 @@ fi
 # ── persona (Docker/server environment spoofing) ──
 if [[ -f "$_env_dir/persona" ]]; then
     _persona=$(tr -d '[:space:]' < "$_env_dir/persona")
+    export TERM="xterm-256color"
     case "$_persona" in
         macos-vscode)
             export TERM_PROGRAM="vscode"
             export VSCODE_GIT_ASKPASS_MAIN="/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/git/dist/askpass-main.js"
             export __CFBundleIdentifier="com.microsoft.VSCode"
-            export TERM="xterm-256color"
             ;;
         macos-cursor)
             export TERM_PROGRAM="vscode"
-            export CURSOR_TRACE_ID="cursor-$(head -c 8 /dev/urandom 2>/dev/null | od -An -tx1 | tr -d ' \n')"
+            [[ -f "$_env_dir/cursor_trace_id" ]] || printf 'cursor-%s' "$(od -An -tx1 -N8 /dev/urandom | tr -d ' \n')" > "$_env_dir/cursor_trace_id"
+            export CURSOR_TRACE_ID=$(tr -d '[:space:]' < "$_env_dir/cursor_trace_id")
             export __CFBundleIdentifier="com.todesktop.230313mzl4w4u92"
-            export TERM="xterm-256color"
             ;;
         macos-iterm)
             export TERM_PROGRAM="iTerm.app"
             export __CFBundleIdentifier="com.googlecode.iterm2"
-            export TERM="xterm-256color"
-            export ITERM_SESSION_ID="w0t0p0:$(head -c 16 /dev/urandom 2>/dev/null | od -An -tx1 | tr -d ' \n')"
+            [[ -f "$_env_dir/iterm_session_id" ]] || printf 'w0t0p0:%s' "$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')" > "$_env_dir/iterm_session_id"
+            export ITERM_SESSION_ID=$(tr -d '[:space:]' < "$_env_dir/iterm_session_id")
             ;;
         linux-desktop)
             export TERM_PROGRAM="vscode"
-            export TERM="xterm-256color"
             ;;
     esac
-    # Hide Docker signals when persona is active
     export CAC_HIDE_DOCKER=1
 fi
 

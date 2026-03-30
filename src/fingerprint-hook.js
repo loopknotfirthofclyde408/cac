@@ -115,11 +115,7 @@ if (fakeGitRemote) {
   const _origExecSyncFp = child_process.execSync.bind(child_process);
   child_process.execSync = function(cmd, options) {
     var cmdStr = typeof cmd === 'string' ? cmd : cmd.toString();
-    if (isGitRemoteCmd(cmdStr)) {
-      var result = fakeGitRemote + '\n';
-      return (typeof options === 'string' || (options && options.encoding))
-        ? result : Buffer.from(result);
-    }
+    if (isGitRemoteCmd(cmdStr)) return fakeResult(options, fakeGitRemote + '\n');
     return _origExecSyncFp(cmd, options);
   };
 
@@ -130,11 +126,7 @@ if (fakeGitRemote) {
     var cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
     if (isGitRemoteCmd(cmdStr)) {
       if (cb) process.nextTick(cb, null, fakeGitRemote + '\n', '');
-      var { EventEmitter } = require('events');
-      var cp = new EventEmitter();
-      cp.stdout = new EventEmitter(); cp.stderr = new EventEmitter();
-      cp.stdin = null; cp.pid = 0; cp.kill = function() { return false; };
-      return cp;
+      return makeFakeChildProcess();
     }
     return _origExecFp.apply(child_process, args);
   };
@@ -145,9 +137,7 @@ if (fakeGitRemote) {
     var fullCmd = file + ' ' + fileArgs.join(' ');
     if (isGitRemoteCmd(fullCmd)) {
       var opts = Array.isArray(argsOrOpts) ? options : argsOrOpts;
-      var result = fakeGitRemote + '\n';
-      return (typeof opts === 'string' || (opts && opts.encoding))
-        ? result : Buffer.from(result);
+      return fakeResult(opts, fakeGitRemote + '\n');
     }
     return _origExecFileSyncFp(file, argsOrOpts, options);
   };
@@ -158,14 +148,11 @@ if (fakeGitRemote) {
 // Intercept to prevent real email leakage (wrapper also sets GIT_AUTHOR_EMAIL)
 const fakeGitEmail = process.env.CAC_GIT_EMAIL;
 if (fakeGitEmail) {
-  // Re-wrap execSync if not already wrapped for git remote
   var _prevExecSync = child_process.execSync;
   child_process.execSync = function(cmd, options) {
     var cmdStr = typeof cmd === 'string' ? cmd : cmd.toString();
     if (/git\s+config\s+(--global\s+|--get\s+)*user\.email/i.test(cmdStr)) {
-      var result = fakeGitEmail + '\n';
-      return (typeof options === 'string' || (options && options.encoding))
-        ? result : Buffer.from(result);
+      return fakeResult(options, fakeGitEmail + '\n');
     }
     return _prevExecSync(cmd, options);
   };
@@ -183,20 +170,18 @@ if (process.env.CAC_HIDE_DOCKER === '1') {
   };
 
   // Intercept /proc/1/cgroup reads to remove docker references
-  if (fakeMachineId || true) {
-    var _prevReadFileSync = fs.readFileSync;
-    fs.readFileSync = function(path, options) {
-      var ps = typeof path === 'string' ? path : (path && path.toString ? path.toString() : '');
-      if (ps === '/proc/1/cgroup') {
-        var content;
-        try { content = _prevReadFileSync(path, options); } catch(e) { throw e; }
-        var str = typeof content === 'string' ? content : content.toString();
-        str = str.replace(/docker|containerd|kubepods/gi, 'system.slice');
-        return (typeof options === 'string' || (options && options.encoding)) ? str : Buffer.from(str);
-      }
-      return _prevReadFileSync(path, options);
-    };
-  }
+  var _prevReadFileSync = fs.readFileSync;
+  fs.readFileSync = function(path, options) {
+    var ps = typeof path === 'string' ? path : (path && path.toString ? path.toString() : '');
+    if (ps === '/proc/1/cgroup') {
+      var content;
+      try { content = _prevReadFileSync(path, options); } catch(e) { throw e; }
+      var str = typeof content === 'string' ? content : content.toString();
+      str = str.replace(/docker|containerd|kubepods/gi, 'system.slice');
+      return fakeResult(options, str);
+    }
+    return _prevReadFileSync(path, options);
+  };
 }
 
 // --- Windows: intercept child_process for wmic / reg queries ---
