@@ -19,9 +19,24 @@ _ensure_initialized() {
     if [[ -z "$_self_dir" ]] || [[ ! -f "$_self_dir/relay.js" ]]; then
         _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
     fi
-    [[ -f "$_self_dir/fingerprint-hook.js" ]] && cp "$_self_dir/fingerprint-hook.js" "$CAC_DIR/fingerprint-hook.js"
-    [[ -f "$_self_dir/relay.js" ]] && cp "$_self_dir/relay.js" "$CAC_DIR/relay.js"
+    # Warn if running as root — files written here become root-owned and break
+    # normal-user invocations (wrapper has set -e and will silently exit).
+    if [[ $EUID -eq 0 ]]; then
+        echo "[cac] warning: running as root may corrupt ~/.cac/ file ownership" >&2
+        echo "[cac] hint: run as your normal user instead" >&2
+    fi
+    # rm -f first: user owns ~/.cac/ dir so can delete root-owned files even if can't overwrite them
+    if [[ -f "$_self_dir/fingerprint-hook.js" ]]; then
+        rm -f "$CAC_DIR/fingerprint-hook.js" 2>/dev/null || true
+        cp "$_self_dir/fingerprint-hook.js" "$CAC_DIR/fingerprint-hook.js" 2>/dev/null || true
+    fi
+    if [[ -f "$_self_dir/relay.js" ]]; then
+        rm -f "$CAC_DIR/relay.js" 2>/dev/null || true
+        cp "$_self_dir/relay.js" "$CAC_DIR/relay.js" 2>/dev/null || true
+    fi
+    rm -f "$CAC_DIR/cac-dns-guard.js" 2>/dev/null || true
     _write_dns_guard_js 2>/dev/null || true
+    rm -f "$CAC_DIR/blocked_hosts" 2>/dev/null || true
     _write_blocked_hosts 2>/dev/null || true
 
     # PATH (idempotent — always ensure it's in rc file)
